@@ -1,2 +1,1 @@
-def hello_world():
-    pass
+print('Hello, world')
