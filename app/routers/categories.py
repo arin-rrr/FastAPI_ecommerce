@@ -12,7 +12,7 @@ router = APIRouter(
 )
 
 
-# делаем наброски (заглушки)
+# делаем наброски
 @router.get('/', response_model=list[CategorySchema])
 async def get_all_categories(db: Session = Depends(get_db)):
     '''
@@ -43,11 +43,28 @@ async def create_category(category: CategoryCreate, db: Session = Depends(get_db
     return new_category
 
 @router.put('/{category_id}')
-async def update_category(category_id: int):
+async def update_category(category_id: int, category: CategoryCreate, db: Session = Depends(get_db)):
     '''
-    To update a category by ID
+    To update a category by ID - name or parent_id
     '''
-    return {'message': f'Категория с {category_id} обновлена.'}
+
+    # проверяем, что категория существует
+    stmt = select(CategoryModel).where(CategoryModel.id == category_id, CategoryModel.is_active == True)
+    new_category = db.scalars(stmt).first()
+    if new_category is None:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Category not found')
+
+    # проверяем корректность parent_id
+    if category.parent_id is not None:
+        parent_stmt = select(CategoryModel).where(CategoryModel.parent_id == category.parent_id, CategoryModel.parent_id == True)
+        if db.scalars(parent_stmt).first() is None:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Incorrect parent_id')
+    db.execute(
+        update(CategoryModel).where(CategoryModel.id == category_id).values(**category.model_dump())
+    )
+    db.commit()
+    db.refresh(new_category)
+    return new_category
 
 @router.delete('/{category_id}', status_code=status.HTTP_200_OK)
 async def delete_category(category_id: int, db: Session = Depends(get_db)):
