@@ -42,13 +42,13 @@ async def create_product(product: ProductCreate, db: Session = Depends(get_db)):
     return new_product
 
 
-@router.get('/category/{category_id}', status_code=status.HTTP_200_OK)
+@router.get('/category/{category_id}', status_code=status.HTTP_200_OK, response_model=list[ProductSchema])
 async def get_product_by_category(category_id: int, db: Session = Depends(get_db)) -> list[ProductSchema]:
     '''
     To get all products in category by category_id
     '''
     active_category = select(CategoryModel).where(CategoryModel.is_active == True, CategoryModel.id == category_id)
-    if db.scalars(active_category).all() is None:
+    if db.scalars(active_category).first() is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Category not found or inactive')
     products_by_category_id = select(ProductModel).where(ProductModel.category_id == category_id,
                                                          ProductModel.is_active == True)
@@ -64,7 +64,7 @@ async def get_product_info_by_id(product_id: int, db: Session = Depends(get_db))
     To get a product info by product_id
     '''
     active_product = select(ProductModel).where(ProductModel.is_active == True, ProductModel.id == product_id)
-    res_active_product = db.scalars(active_product).all()
+    res_active_product = db.scalars(active_product).first()
     if res_active_product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found or inactive')
     # проверем, что категория активна
@@ -105,9 +105,7 @@ async def delete_product(product_id: int, db: Session = Depends(get_db)):
     res_active_product = db.scalars(active_product).first()
     if res_active_product is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found or inactive')
-    db.execute(
-        update(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True).values(is_active=False)
-    )
+
+    res_active_product.is_active = False
     db.commit()
-    db.refresh(res_active_product)
     return {"status": "success", "message": "Product marked as inactive"}
