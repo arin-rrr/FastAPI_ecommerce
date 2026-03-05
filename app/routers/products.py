@@ -14,11 +14,16 @@ router = APIRouter(
 
 
 @router.get('/')
-async def get_all_products():
+async def get_all_products(db: Session = Depends(get_db), status_code=status.HTTP_200_OK) -> list[ProductSchema]:
     '''
     To get the list of all products
     '''
-    return {'message': 'Список всех продуктов.'}
+    stmt = select(ProductModel).where(ProductModel.is_active == True)
+    active_products = db.scalars(stmt).all()
+    if active_products is None:
+        return []
+    else:
+        return active_products
 
 
 @router.post('/', status_code=status.HTTP_201_CREATED, response_model=ProductSchema)  # определяем код ответа и модель ответа
