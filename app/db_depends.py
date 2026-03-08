@@ -15,7 +15,7 @@ def get_db() -> Generator[Session, None, None]:
         db.close()
 
 
-async def async_get_db() -> AsyncGenerator[AsyncSession, None]:
+async def get_async_db() -> AsyncGenerator[AsyncSession, None]:
     """
     Предоставляет асинхронную сессию SQLAlchemy для работы с базой данных PostgreSQL.
     """

@@ -17,4 +17,4 @@ class Product(Base):
     # Foreign Key to Categories
     category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'), nullable=False)
     # Relation between database tables
-    category: Mapped['Category'] = relationship('Category', back_populates='products')
+    category: Mapped["Category"] = relationship("app.models.categories.Category", back_populates='products')
