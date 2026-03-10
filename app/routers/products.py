@@ -1,8 +1,8 @@
 from fastapi import APIRouter, status, Depends, HTTPException
 from sqlalchemy import select, update
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db_depends import get_db
+from app.db_depends import get_db, get_async_db
 from app.schema import Product as ProductSchema, ProductCreate
 from app.models.products import Product as ProductModel
 from app.models.categories import Category as CategoryModel
@@ -14,12 +14,13 @@ router = APIRouter(
 
 
 @router.get('/')
-async def get_all_products(db: Session = Depends(get_db), status_code=status.HTTP_200_OK) -> list[ProductSchema]:
+async def get_all_products(db: AsyncSession = Depends(get_async_db), status_code=status.HTTP_200_OK) -> list[ProductSchema]:
     '''
     To get the list of all products
     '''
     stmt = select(ProductModel).where(ProductModel.is_active == True)
-    active_products = db.scalars(stmt).all()
+    db_result = await db.scalars(stmt)
+    active_products = db_result.all()
     return active_products
 
 
