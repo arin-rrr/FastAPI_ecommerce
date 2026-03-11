@@ -14,8 +14,7 @@ router = APIRouter(
 
 
 @router.get('/')
-async def get_all_products(db: AsyncSession = Depends(get_async_db), status_code=status.HTTP_200_OK) -> list[
-    ProductSchema]:
+async def get_all_products(db: AsyncSession = Depends(get_async_db), status_code=status.HTTP_200_OK):
     '''
     To get the list of all products
     '''
@@ -46,7 +45,7 @@ async def create_product(product: ProductCreate, db: AsyncSession = Depends(get_
 
 
 @router.get('/category/{category_id}', status_code=status.HTTP_200_OK, response_model=list[ProductSchema])
-async def get_product_by_category(category_id: int, db: AsyncSession = Depends(get_db)) -> list[ProductSchema]:
+async def get_product_by_category(category_id: int, db: AsyncSession = Depends(get_async_db)) -> list[ProductSchema]:
     '''
     To get all products in category by category_id
     '''
@@ -65,7 +64,7 @@ async def get_product_by_category(category_id: int, db: AsyncSession = Depends(g
 
 
 @router.get('/{product_id}', response_model=ProductSchema, status_code=status.HTTP_200_OK)
-async def get_product_info_by_id(product_id: int, db: AsyncSession = Depends(get_db)) -> ProductSchema:
+async def get_product_info_by_id(product_id: int, db: AsyncSession = Depends(get_async_db)) -> ProductSchema:
     '''
     To get a product info by product_id
     '''
@@ -80,14 +79,14 @@ async def get_product_info_by_id(product_id: int, db: AsyncSession = Depends(get
     res_active_categories = db_active_categories.all()
 
     product_by_id = select(ProductModel.category_id).where(ProductModel.is_active == True, ProductModel.id == product_id)
-    db_product_by_id = await db.scalars(product_by_id)
-    if db_product_by_id.first() not in res_active_categories:
+    db_category_product_by_id = await db.scalars(product_by_id)
+    if db_category_product_by_id.first() not in res_active_categories:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Category not found or inactive')
-    return db_product_by_id.first()
+    return res_active_product
 
 
 @router.put('/{product_id}')
-async def update_product(product_id: int, new_product: ProductCreate, db: AsyncSession = Depends(get_db)):
+async def update_product(product_id: int, new_product: ProductCreate, db: AsyncSession = Depends(get_async_db)):
     '''
     To update product info by product_id
     '''
@@ -111,7 +110,7 @@ async def update_product(product_id: int, new_product: ProductCreate, db: AsyncS
 
 
 @router.delete('/{product_id}', status_code=status.HTTP_200_OK)
-async def delete_product(product_id: int, db: AsyncSession = Depends(get_db)):
+async def delete_product(product_id: int, db: AsyncSession = Depends(get_async_db)):
     '''
     To delete a product by product_id making it inactive
     '''
