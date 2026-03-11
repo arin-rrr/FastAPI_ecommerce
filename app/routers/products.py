@@ -18,10 +18,9 @@ async def get_all_products(db: AsyncSession = Depends(get_async_db), status_code
     '''
     To get the list of all products
     '''
-    stmt = select(ProductModel).where(ProductModel.is_active == True)
-    db_result = await db.scalars(stmt)
-    active_products = db_result.all()
-    return active_products
+    # перепишу в две строчки
+    db_result = await db.scalars(select(ProductModel).where(ProductModel.is_active == True))
+    return db_result.all()
 
 
 @router.post('/', status_code=status.HTTP_201_CREATED,
