@@ -1,5 +1,4 @@
-from sqlalchemy import create_engine, Column, String, Integer, Boolean, Float, DateTime
-from datetime import datetime
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 
@@ -19,7 +18,7 @@ from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, Asyn
 from sqlalchemy.orm import DeclarativeBase
 
 # Строка подключения для PostgreSQl
-DATABASE_URL = "postgresql+asyncpg://ecommerce_user:xxxxxxxx@localhost:5432/ecommerce_db"
+DATABASE_URL = "postgresql+asyncpg://ecommerce_user:1516@127.0.0.1:5432/ecommerce_db"
 
 # Создаём Engine
 async_engine = create_async_engine(DATABASE_URL, echo=True)
@@ -30,16 +29,3 @@ async_session_maker = async_sessionmaker(async_engine, expire_on_commit=False, c
 
 class Base(DeclarativeBase):
     pass
-
-
-class Product(Base):
-    __tablename__ = 'product'
-
-    id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    sku = Column(String(20), unique=True, nullable=False)
-    name = Column(String(100), nullable=False, index=True)
-    description = Column(String(500), default="")
-    price = Column(Float, nullable=False)
-    is_available = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.now)
-

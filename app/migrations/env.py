@@ -6,18 +6,14 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from alembic import context
-
 from app.database import Base
-from app.models import categories, products
+from app import models
 from decouple import config as decouple_config
-database_url = "postgresql+asyncpg://postgres:1516@127.0.0.1:5432/ecommerce_db"
-# database_url = decouple_config("DATABASE_URL", cast=str)
+
 
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
-config.set_main_option("sqlalchemy.url", database_url)
-
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

@@ -16,5 +16,7 @@ class Product(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
     # Foreign Key to Categories
     category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'), nullable=False)
+    seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
     # Relation between database tables
     category: Mapped["Category"] = relationship("app.models.categories.Category", back_populates='products')
+    seller: Mapped["User"] = relationship("User", back_populates="products")
