@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from app.database import Base
 from app import models
-from decouple import config as decouple_config
+from app.models import categories, users, products
 
 
 # this is the Alembic Config object, which provides
@@ -64,15 +64,14 @@ def do_run_migrations(connection: Connection) -> None:
 
 
 async def run_async_migrations() -> None:
-    """In this scenario we need to create an Engine
-    and associate a connection with the context.
+    # Берем конфиг из alembic.ini
+    configuration = config.get_section(config.config_ini_section)
 
-    """
-
+    # Создаем асинхронный движок
     connectable = async_engine_from_config(
-        config.get_section(config.config_ini_section, {}),
+        configuration,
         prefix="sqlalchemy.",
-        poolclass=pool.NullPool,
+        poolclass=pool.NullPool,  # Важно для миграций
     )
 
     async with connectable.connect() as connection:
@@ -83,7 +82,6 @@ async def run_async_migrations() -> None:
 
 def run_migrations_online() -> None:
     """Run migrations in 'online' mode."""
-
     asyncio.run(run_async_migrations())
 
 
