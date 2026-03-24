@@ -12,7 +12,7 @@ from app.db_depends import get_async_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")   # время действия созданного токена
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")  # время действия созданного токена
 
 
 def hash_password(password: str) -> str:
@@ -28,21 +28,26 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
     """
     return pwd_context.verify(plain_password, hashed_password)
 
+
 '''
 Именно эта функция будет использоваться в эндпоинте логина (POST /token) для выдачи токена после успешной аутентификации.
 '''
+
+
 def create_access_token(data: dict):
     """
     Создаёт JWT с payload (sub, role, id, exp) -> email, role, ID и время истечения.
     """
     to_encode = data.copy()  # создаёт копию текущего словаря с параметрами
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)  # задаёт, через какое время токен истечёт
+    expire = datetime.now(timezone.utc) + timedelta(
+        minutes=ACCESS_TOKEN_EXPIRE_MINUTES)  # задаёт, через какое время токен истечёт
     to_encode.update({"exp": expire})  # Добавляет поле exp (expiration) в payload токена
     '''
     Кодирует данные в JWT с SECRET_KEY и алгоритма подписи. В итоге возвращает строку токена, состоящую из Header, 
     Payload и Signature, разделённых точками.
     '''
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
 
 # Функция проверки JWT и получения пользователя
 async def get_current_user(token: str = Depends(oauth2_scheme),
@@ -74,3 +79,12 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
     if user is None:
         raise credentials_exception
     return user
+
+
+async def get_current_seller(current_user: UserModel = Depends(get_current_user)):
+    '''
+    Проверяет, что пользователь seller
+    '''
+    if current_user.role != 'seller':
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only sellers can perform this action")
+    return current_user
