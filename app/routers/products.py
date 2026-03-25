@@ -7,6 +7,7 @@ from app.db_depends import get_db, get_async_db
 from app.schema import Product as ProductSchema, ProductCreate, UserCreate
 from app.models.products import Product as ProductModel
 from app.models.categories import Category as CategoryModel
+from app.models.reviews import Reviews as ReviewsModel
 
 router = APIRouter(
     prefix='/products',
@@ -26,9 +27,9 @@ async def get_all_products(db: AsyncSession = Depends(get_async_db), status_code
 
 @router.post("/", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
 async def create_product(
-    product: ProductCreate,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserCreate = Depends(get_current_seller)
+        product: ProductCreate,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserCreate = Depends(get_current_seller)
 ):
     """
     Создаёт новый товар, привязанный к текущему продавцу (только для 'seller').
@@ -79,7 +80,8 @@ async def get_product_info_by_id(product_id: int, db: AsyncSession = Depends(get
     db_active_categories = await db.scalars(active_categories)
     res_active_categories = db_active_categories.all()
 
-    product_by_id = select(ProductModel.category_id).where(ProductModel.is_active == True, ProductModel.id == product_id)
+    product_by_id = select(ProductModel.category_id).where(ProductModel.is_active == True,
+                                                           ProductModel.id == product_id)
     db_category_product_by_id = await db.scalars(product_by_id)
     if db_category_product_by_id.first() not in res_active_categories:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail='Category not found or inactive')
@@ -88,10 +90,10 @@ async def get_product_info_by_id(product_id: int, db: AsyncSession = Depends(get
 
 @router.put("/{product_id}", response_model=ProductSchema)
 async def update_product(
-    product_id: int,
-    product: ProductCreate,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserCreate = Depends(get_current_seller)
+        product_id: int,
+        product: ProductCreate,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserCreate = Depends(get_current_seller)
 ):
     """
     Обновляет товар, если он принадлежит текущему продавцу (только для 'seller').
@@ -114,11 +116,12 @@ async def update_product(
     await db.refresh(db_product)  # Для консистентности данных
     return db_product
 
+
 @router.delete("/{product_id}", response_model=ProductSchema)
 async def delete_product(
-    product_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserCreate = Depends(get_current_seller)
+        product_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserCreate = Depends(get_current_seller)
 ):
     """
     Выполняет мягкое удаление товара, если он принадлежит текущему продавцу (только для 'seller').
@@ -137,3 +140,17 @@ async def delete_product(
     await db.commit()
     await db.refresh(product)  # Для возврата is_active = False
     return product
+
+
+@router.get('/{product_id}/reviews', response_model=list[ReviewsModel])
+async def get_reviews_product(product_id: int, db: AsyncSession = Depends(get_async_db)):
+    result = await db.scalars(
+        select(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True)
+    )
+    product = result.first()
+    if not product:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found or inactive")
+
+    reviews = await db.scalars(select(ReviewsModel).where(ReviewsModel.product_id == product.id))
+    reviews_result = reviews.all()
+    return reviews_result
