@@ -11,7 +11,8 @@ from app.config import SECRET_KEY, ALGORITHM
 from app.db_depends import get_async_db
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 30  # время действия access-токена
+REFRESH_TOKEN_EXPIRE_DAYS = 7  # время действия refresh-токена
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="users/token")  # время действия созданного токена
 
 
@@ -49,6 +50,19 @@ def create_access_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
+def create_refresh_token(data: dict):
+    """
+    Создаёт refresh-токен с длительным сроком действия и token_type="refresh".
+    """
+    to_encode = data.copy()
+    expire = datetime.now(timezone.utc) + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
+    to_encode.update({
+        "exp": expire,
+        "token_type": "refresh",
+    })
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
 # Функция проверки JWT и получения пользователя
 async def get_current_user(token: str = Depends(oauth2_scheme),
                            db: AsyncSession = Depends(get_async_db)):
@@ -63,7 +77,8 @@ async def get_current_user(token: str = Depends(oauth2_scheme),
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         email: str = payload.get("sub")
-        if email is None:
+        token_type: str = payload.get("token_type")
+        if email is None or token_type != "access":
             raise credentials_exception
     except jwt.ExpiredSignatureError:
         raise HTTPException(
