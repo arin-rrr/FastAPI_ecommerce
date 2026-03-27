@@ -61,5 +61,12 @@ class UserCreate(BaseModel):
     password: str = Field(min_length=8, description='Пароль (минимум 8 символов)')
     role: str = Field(default="buyer", pattern="^(buyer|seller)$", description="Роль: 'buyer' или 'seller'")
 
+
 class RefreshTokenRequest(BaseModel):
     refresh_token: str
+
+
+class ReviewCreate(BaseModel):
+    product_id: int = Field(..., description='ID товара')
+    comment: str | None = Field(None, description='Отзыв')
+    grade: int = Field(..., ge=1, le=5)
