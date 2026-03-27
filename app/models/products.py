@@ -14,6 +14,7 @@ class Product(Base):
     image_url: Mapped[str | None] = mapped_column(String(200), nullable=True)
     stock: Mapped[int] = mapped_column(Integer, nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
+    rating: Mapped[float] = mapped_column(Numeric(10, 1), default=0.0)
     # Foreign Key to Categories
     category_id: Mapped[int] = mapped_column(ForeignKey('categories.id'), nullable=False)
     seller_id: Mapped[int] = mapped_column(ForeignKey("users.id"), nullable=False)
