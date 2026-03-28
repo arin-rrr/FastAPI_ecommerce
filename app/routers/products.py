@@ -17,24 +17,26 @@ router = APIRouter(
 
 # Добавляем пагинацию
 @router.get('/', response_model=ProductList)
-async def get_all_products(db: AsyncSession = Depends(get_async_db), page: int = Query(1, ge=1),
-                           page_size: int = Query(20, ge=1, le=100)):
-    '''
-    To get the list of all products
-    '''
+async def get_all_products(
+        db: AsyncSession = Depends(get_async_db),
+        page: int = Query(1, ge=1),
+        page_size: int = Query(20, ge=1, le=100)
+):
+    total_stmt = select(func.count()).select_from(ProductModel).where(ProductModel.is_active == True)
+    total_result = await db.execute(total_stmt)
+    total = total_result.scalar() or 0
 
-    # получили количество активных товаров
-    total_stmt = select(func.count()).select(ProductModel).where(ProductModel.is_active == True)
-    total = await db.scalars(total_stmt) or 0
-
+    # 2. Получаем товары для текущей страницы
     product_stmt = (
         select(ProductModel)
         .where(ProductModel.is_active == True)
         .order_by(ProductModel.id)
-        .offset((page-1)*page_size)
+        .offset((page - 1) * page_size)
         .limit(page_size)
     )
-    items = (await db.scalars(product_stmt)).all()
+    result = await db.execute(product_stmt)
+    items = result.scalars().all()
+
     return {
         'items': items,
         'total': total,
