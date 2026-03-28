@@ -1,10 +1,10 @@
-from fastapi import APIRouter, status, Depends, HTTPException
-from sqlalchemy import select, update
+from fastapi import APIRouter, status, Depends, HTTPException, Query
+from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_seller
 from app.db_depends import get_db, get_async_db
-from app.schema import Product as ProductSchema, ProductCreate, UserCreate, ReviewResponse
+from app.schema import Product as ProductSchema, ProductCreate, UserCreate, ReviewResponse, ProductList
 from app.models.products import Product as ProductModel
 from app.models.categories import Category as CategoryModel
 from app.models.reviews import Reviews as ReviewsModel
@@ -15,14 +15,32 @@ router = APIRouter(
 )
 
 
-@router.get('/')
-async def get_all_products(db: AsyncSession = Depends(get_async_db), status_code=status.HTTP_200_OK):
+# Добавляем пагинацию
+@router.get('/', response_model=ProductList)
+async def get_all_products(db: AsyncSession = Depends(get_async_db), page: int = Query(1, ge=1),
+                           page_size: int = Query(20, ge=1, le=100)):
     '''
     To get the list of all products
     '''
-    # перепишу в две строчки
-    db_result = await db.scalars(select(ProductModel).where(ProductModel.is_active == True))
-    return db_result.all()
+
+    # получили количество активных товаров
+    total_stmt = select(func.count()).select(ProductModel).where(ProductModel.is_active == True)
+    total = await db.scalars(total_stmt) or 0
+
+    product_stmt = (
+        select(ProductModel)
+        .where(ProductModel.is_active == True)
+        .order_by(ProductModel.id)
+        .offset((page-1)*page_size)
+        .limit(page_size)
+    )
+    items = (await db.scalars(product_stmt)).all()
+    return {
+        'items': items,
+        'total': total,
+        'page': page,
+        'page_size': page_size
+    }
 
 
 @router.post("/", response_model=ProductSchema, status_code=status.HTTP_201_CREATED)
