@@ -11,7 +11,7 @@ from app.models.categories import Category as CategoryModel
 from app.models.users import User as UserModel
 from app.models.reviews import Reviews as ReviewsModel
 
-router = APIRouter('/reviews', tags=['reviews'])
+router = APIRouter(prefix='/reviews', tags=['reviews'])
 
 
 @router.get('/')
