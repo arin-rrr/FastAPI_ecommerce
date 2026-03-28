@@ -64,7 +64,7 @@ def create_refresh_token(data: dict):
 
 
 # Функция проверки JWT и получения пользователя
-    async def get_current_user(token: str = Depends(oauth2_scheme),
+async def get_current_user(token: str = Depends(oauth2_scheme),
                                db: AsyncSession = Depends(get_async_db)):
         """
         Проверяет JWT и возвращает пользователя из базы.
@@ -96,7 +96,7 @@ def create_refresh_token(data: dict):
         return user
 
 
-    async def get_current_seller(current_user: UserModel = Depends(get_current_user)):
+async def get_current_seller(current_user: UserModel = Depends(get_current_user)):
         '''
         Проверяет, что пользователь seller
         '''
@@ -105,7 +105,7 @@ def create_refresh_token(data: dict):
         return current_user
 
 
-    async def get_current_buyer(current_user: UserModel = Depends(get_current_user)):
+async def get_current_buyer(current_user: UserModel = Depends(get_current_user)):
         '''
         Проверяет, что пользователь buyer
         '''
