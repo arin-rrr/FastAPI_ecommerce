@@ -42,7 +42,7 @@ def create_access_token(data: dict):
     to_encode = data.copy()  # создаёт копию текущего словаря с параметрами
     expire = datetime.now(timezone.utc) + timedelta(
         minutes=ACCESS_TOKEN_EXPIRE_MINUTES)  # задаёт, через какое время токен истечёт
-    to_encode.update({"exp": expire})  # Добавляет поле exp (expiration) в payload токена
+    to_encode.update({"exp": expire, 'token_type': 'access'})  # Добавляет поле exp (expiration) в payload токена
     '''
     Кодирует данные в JWT с SECRET_KEY и алгоритма подписи. В итоге возвращает строку токена, состоящую из Header, 
     Payload и Signature, разделённых точками.
@@ -64,51 +64,51 @@ def create_refresh_token(data: dict):
 
 
 # Функция проверки JWT и получения пользователя
-async def get_current_user(token: str = Depends(oauth2_scheme),
-                           db: AsyncSession = Depends(get_async_db)):
-    """
-    Проверяет JWT и возвращает пользователя из базы.
-    """
-    credentials_exception = HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Could not validate credentials",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        email: str = payload.get("sub")
-        token_type: str = payload.get("token_type")
-        if email is None or token_type != "access":
-            raise credentials_exception
-    except jwt.ExpiredSignatureError:
-        raise HTTPException(
+    async def get_current_user(token: str = Depends(oauth2_scheme),
+                               db: AsyncSession = Depends(get_async_db)):
+        """
+        Проверяет JWT и возвращает пользователя из базы.
+        """
+        credentials_exception = HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Token has expired",
+            detail="Could not validate credentials",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    except jwt.PyJWTError:
-        raise credentials_exception
-    result = await db.scalars(
-        select(UserModel).where(UserModel.email == email, UserModel.is_active == True))
-    user = result.first()
-    if user is None:
-        raise credentials_exception
-    return user
+        try:
+            payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+            email: str = payload.get("sub")
+            token_type: str = payload.get("token_type")
+            if email is None or token_type != "access":
+                raise credentials_exception
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Token has expired",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        except jwt.PyJWTError:
+            raise credentials_exception
+        result = await db.scalars(
+            select(UserModel).where(UserModel.email == email, UserModel.is_active == True))
+        user = result.first()
+        if user is None:
+            raise credentials_exception
+        return user
 
 
-async def get_current_seller(current_user: UserModel = Depends(get_current_user)):
-    '''
-    Проверяет, что пользователь seller
-    '''
-    if current_user.role != 'seller':
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only sellers can perform this action")
-    return current_user
+    async def get_current_seller(current_user: UserModel = Depends(get_current_user)):
+        '''
+        Проверяет, что пользователь seller
+        '''
+        if current_user.role != 'seller':
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Only sellers can perform this action")
+        return current_user
 
 
-async def get_current_buyer(current_user: UserModel = Depends(get_current_user)):
-    '''
-    Проверяет, что пользователь buyer
-    '''
-    if current_user.role != 'buyer':
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Only buyers can perform this action')
-    return current_user
+    async def get_current_buyer(current_user: UserModel = Depends(get_current_user)):
+        '''
+        Проверяет, что пользователь buyer
+        '''
+        if current_user.role != 'buyer':
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail='Only buyers can perform this action')
+        return current_user
