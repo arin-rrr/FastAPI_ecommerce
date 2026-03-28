@@ -1,6 +1,7 @@
 from fastapi import APIRouter, status, Depends, HTTPException, Query
 from sqlalchemy import select, update, func
 from sqlalchemy.ext.asyncio import AsyncSession
+from datetime import datetime
 
 from app.auth import get_current_seller
 from app.db_depends import get_db, get_async_db
@@ -25,7 +26,8 @@ async def get_all_products(
         min_price: float | None = Query(None, ge=0, description='Минимальная цена товара'),
         max_price: float | None = Query(None, ge=0, description='Максимальная цена товара'),
         in_stock: bool | None = Query(None, description="true — только товары в наличии, false — только без остатка"),
-        seller_id: int | None = Query(None, description="ID продавца для фильтрации")
+        seller_id: int | None = Query(None, description="ID продавца для фильтрации"),
+        created_at: datetime | None = Query(None, description='Время создания')
 ):
     # Проверка логики min_price <= max_price
     if min_price is not None and max_price is not None and min_price > max_price:
@@ -47,6 +49,8 @@ async def get_all_products(
         filters.append(ProductModel.stock > 0 if in_stock else ProductModel.stock == 0)
     if seller_id is not None:
         filters.append(ProductModel.seller_id == seller_id)
+    if created_at is not None:
+        filters.append(ProductModel.created_at > created_at)
 
     # Подсчёт общего количества с учётом фильтров
     total_stmt = select(func.count()).select_from(ProductModel).where(*filters)
