@@ -23,7 +23,7 @@ async def get_all_reviews(db: AsyncSession = Depends(get_async_db), status_code=
     return db_results.all()
 
 
-@router.post('/', response_model=ReviewsModel, status_code=status.HTTP_201_CREATED)
+@router.post('/', status_code=status.HTTP_201_CREATED)
 async def add_review(review: ReviewCreate, db: AsyncSession = Depends(get_async_db),
                      current_user: UserCreate = Depends(get_current_buyer)):
     '''
