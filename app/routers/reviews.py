@@ -24,35 +24,44 @@ async def get_all_reviews(db: AsyncSession = Depends(get_async_db), status_code=
 
 
 @router.post('/', status_code=status.HTTP_201_CREATED)
-async def add_review(review: ReviewCreate, db: AsyncSession = Depends(get_async_db),
-                     current_user: UserCreate = Depends(get_current_buyer)):
-    '''
-    Добавление нового отзыва для продукта и перерасчёт среднего рейтинга товара
-    '''
+async def add_review(
+        review: ReviewCreate,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_buyer)
+):
+    result = await db.execute(
+        select(ProductModel).where(ProductModel.id == review.product_id, ProductModel.is_active == True)
+    )
+    product = result.scalar_one_or_none()
 
-    # проверяем, что grade верный
-    if review.grade > 5 or review.grade < 1:
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_CONTENT, detail='Grade is inappropriate')
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found or inactive")
 
-    # проверяем, что продукт существует и активный
-    db_product = await db.scalars(select(ProductModel).where(ProductModel.id == review.product_id, ProductModel.is_active == True))
-    if db_product.first() is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Product not found or inactive')
-
-    new_review = ReviewsModel(**review.model_dump(), user_id = current_user.id)
+    new_review = ReviewsModel(**review.model_dump(), user_id=current_user.id)
     db.add(new_review)
 
-    all_reviews_products = await db.scalars(select(ReviewsModel.grade).where(ReviewsModel.is_active == True, ReviewsModel.product_id == review.product_id))
-    grades = all_reviews_products.all()
+    # Получаем все старые оценки
+    reviews_result = await db.execute(
+        select(ReviewsModel.grade).where(
+            ReviewsModel.product_id == review.product_id,
+            ReviewsModel.is_active == True
+        )
+    )
+    grades = list(reviews_result.scalars().all())
 
-    if grades is None:
-        new_rate = 0.0
-    else:
-        new_rate = sum(grades) / len(grades)
+    grades.append(review.grade)
 
-    db_product.first().rating = new_rate
-    await db.commit()
-    await db.refresh(new_review)
+    new_rate = round(sum(grades) / len(grades), 1)
+
+    product.rating = new_rate
+
+    try:
+        await db.commit()
+        await db.refresh(new_review)
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
     return new_review
 
 
