@@ -39,7 +39,7 @@ async def create_product(
     )
     if not category_result.first():
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Category not found or inactive")
-    db_product = ProductModel(**product.model_dump(), seller_id=current_user.id)
+    db_product = ProductModel(**product.model_dump(), seller_id=current_user.id, rating=0.0)
     db.add(db_product)
     await db.commit()
     await db.refresh(db_product)  # Для получения id и is_active из базы
