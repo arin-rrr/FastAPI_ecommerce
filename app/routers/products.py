@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.auth import get_current_seller
 from app.db_depends import get_db, get_async_db
-from app.schema import Product as ProductSchema, ProductCreate, UserCreate
+from app.schema import Product as ProductSchema, ProductCreate, UserCreate, ReviewResponse
 from app.models.products import Product as ProductModel
 from app.models.categories import Category as CategoryModel
 from app.models.reviews import Reviews as ReviewsModel
@@ -142,7 +142,7 @@ async def delete_product(
     return product
 
 
-@router.get('/{product_id}/reviews', response_model=list[ReviewsModel])
+@router.get('/{product_id}/reviews', response_model=list[ReviewResponse])
 async def get_reviews_product(product_id: int, db: AsyncSession = Depends(get_async_db)):
     result = await db.scalars(
         select(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True)

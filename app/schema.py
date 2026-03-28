@@ -1,5 +1,6 @@
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from decimal import Decimal
+from datetime import datetime
 
 
 class CategoryCreate(BaseModel):
@@ -70,3 +71,14 @@ class ReviewCreate(BaseModel):
     product_id: int = Field(..., description='ID товара')
     comment: str | None = Field(None, description='Отзыв')
     grade: int = Field(..., ge=1, le=5)
+
+
+class ReviewResponse(BaseModel):
+    id: int
+    user_id: int | None
+    product_id: int | None
+    comment: str | None
+    comment_date: datetime
+    grade: int
+    is_active: bool
+    model_config = ConfigDict(from_attributes=True)
