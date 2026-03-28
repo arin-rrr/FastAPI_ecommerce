@@ -32,7 +32,6 @@ class ProductCreate(BaseModel):
     image_url: str | None = Field(None, max_length=200, description="URL изображения товара")
     stock: int = Field(..., ge=0, description='Количество товаров на складе (0 и более)')
     category_id: int = Field(..., description='ID категории товара')
-    seller_id: int = Field(..., description='ID селлера-продавца')
 
 
 class Product(BaseModel):
