@@ -27,7 +27,8 @@ async def get_all_products(
         max_price: float | None = Query(None, ge=0, description='Максимальная цена товара'),
         in_stock: bool | None = Query(None, description="true — только товары в наличии, false — только без остатка"),
         seller_id: int | None = Query(None, description="ID продавца для фильтрации"),
-        created_at: datetime | None = Query(None, description='Время создания')
+        created_at: datetime | None = Query(None, description='Время создания'),
+        search: str | None = Query(None, min_length=1, description='ID категории для фильтрации')
 ):
     # Проверка логики min_price <= max_price
     if min_price is not None and max_price is not None and min_price > max_price:
@@ -51,6 +52,10 @@ async def get_all_products(
         filters.append(ProductModel.seller_id == seller_id)
     if created_at is not None:
         filters.append(ProductModel.created_at > created_at)
+    if search is not None:
+        search_value = search.strip()
+        if search_value:
+            filters.append(func.lower(ProductModel.name).like(f'%{search_value.lower()}%'))
 
     # Подсчёт общего количества с учётом фильтров
     total_stmt = select(func.count()).select_from(ProductModel).where(*filters)
