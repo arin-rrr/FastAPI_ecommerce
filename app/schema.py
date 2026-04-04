@@ -1,3 +1,6 @@
+from typing import Annotated
+
+from fastapi import Form
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from decimal import Decimal
 from datetime import datetime
@@ -29,9 +32,24 @@ class ProductCreate(BaseModel):
     name: str = Field(..., min_length=3, max_length=100, description='Название товара (3-100 символов)')
     description: str | None = Field(None, max_length=500, description="Описание товара (до 500 символов)")
     price: Decimal = Field(..., gt=0, decimal_places=2, description='Цена товара (больше 0)')
-    image_url: str | None = Field(None, max_length=200, description="URL изображения товара")
     stock: int = Field(..., ge=0, description='Количество товаров на складе (0 и более)')
     category_id: int = Field(..., description='ID категории товара')
+    @classmethod
+    def as_form(
+            cls,
+            name: Annotated[str, Form(...)],
+            price: Annotated[Decimal, Form(...)],
+            stock: Annotated[int, Form(...)],
+            category_id: Annotated[int, Form(...)],
+            description: Annotated[str | None, Form()] = None,
+    ) -> "ProductCreate":
+        return cls(
+            name=name,
+            description=description,
+            price=price,
+            stock=stock,
+            category_id=category_id,
+        )
 
 
 class Product(BaseModel):
@@ -139,6 +157,7 @@ class OrderItem(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
+
 class Order(BaseModel):
     id: int = Field(..., description="ID заказа")
     user_id: int = Field(..., description="ID пользователя")
@@ -149,6 +168,7 @@ class Order(BaseModel):
     items: list[OrderItem] = Field(default_factory=list, description="Список позиций")
 
     model_config = ConfigDict(from_attributes=True)
+
 
 class OrderList(BaseModel):
     items: list[Order] = Field(..., description="Заказы на текущей странице")
