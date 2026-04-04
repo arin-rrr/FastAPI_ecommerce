@@ -257,11 +257,12 @@ async def update_product(
     await db.refresh(db_product)
     return db_product
 
+
 @router.delete("/{product_id}", response_model=ProductSchema)
 async def delete_product(
-    product_id: int,
-    db: AsyncSession = Depends(get_async_db),
-    current_user: UserModel = Depends(get_current_seller)
+        product_id: int,
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_seller)
 ):
     """
     Выполняет мягкое удаление товара, если он принадлежит текущему продавцу (только для 'seller').
@@ -286,7 +287,8 @@ async def delete_product(
     await db.refresh(product)
     return product
 
-@router.get('/{product_id}/reviews', response_model=list[ReviewResponse])
+
+@router.get('/{prouct_id}/reviews', response_model=list[ReviewResponse])
 async def get_reviews_product(product_id: int, db: AsyncSession = Depends(get_async_db)):
     result = await db.scalars(
         select(ProductModel).where(ProductModel.id == product_id, ProductModel.is_active == True)
