@@ -7,7 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.auth import get_current_user
 from app.db_depends import get_async_db
-from app.models.cart_items import CartItem as CartItemModel
+from app.models.cart_item import CartItem as CartItemModel
 from app.models.orders import Order as OrderModel, OrderItem as OrderItemModel
 from app.models.users import User as UserModel
 from app.schema import Order as OrderSchema, OrderList
