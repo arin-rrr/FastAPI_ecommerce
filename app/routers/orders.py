@@ -123,3 +123,44 @@ async def checkout_order(
             detail="Failed to load created order",
         )
     return created_order
+
+
+@router.get("/", response_model=OrderList)
+async def list_orders(
+        page: int = Query(1, ge=1),
+        page_size: int = Query(10, ge=1, le=100),
+        db: AsyncSession = Depends(get_async_db),
+        current_user: UserModel = Depends(get_current_user),
+):
+    """
+    Возвращает заказы текущего пользователя с простой пагинацией.
+    """
+    total = await db.scalar(
+        select(func.count(OrderModel.id)).where(OrderModel.user_id == current_user.id)
+    )
+    result = await db.scalars(
+        select(OrderModel)
+        .options(selectinload(OrderModel.items).selectinload(OrderItemModel.product))
+        .where(OrderModel.user_id == current_user.id)
+        .order_by(OrderModel.created_at.desc())
+        .offset((page - 1) * page_size)
+        .limit(page_size)
+    )
+    orders = result.all()
+
+    return OrderList(items=orders, total=total or 0, page=page, page_size=page_size)
+
+
+@router.get("/{order_id}", response_model=OrderSchema)
+async def get_order(
+    order_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    current_user: UserModel = Depends(get_current_user),
+):
+    """
+    Возвращает детальную информацию по заказу, если он принадлежит пользователю.
+    """
+    order = await _load_order_with_items(db, order_id)
+    if not order or order.user_id != current_user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
+    return order
